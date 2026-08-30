@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+*.tsbuildinfo
+
+# logs
+*.log
+*.err.log
+vite.log
+vite.err.log
+
+# server / client pid files
+*.pid
+
+# env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor / misc
+.vscode/
+.idea/
