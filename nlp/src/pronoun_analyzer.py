@@ -117,6 +117,9 @@ def analyze_pronouns(text: str):
 
 
 # ---------------------------------------------------------------------------
+from coherence_analyzer import analyze_coherence
+
+# ---------------------------------------------------------------------------
 # HTTP layer
 # ---------------------------------------------------------------------------
 
@@ -139,7 +142,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):  # noqa: N802
         parsed = urlparse(self.path)
-        if parsed.path.rstrip("/") != "/analyze":
+        path = parsed.path.rstrip("/")
+        if path not in ("/analyze", "/analyze/pronouns", "/analyze/coherence"):
             self._send(404, {"error": "not found"})
             return
 
@@ -161,8 +165,18 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, {"error": "text must be a string"})
             return
 
+        if path == "/analyze/coherence":
+            result = analyze_coherence(text)
+            result["analyzer"] = "coherence-parser"
+            self._send(200, result)
+            return
+
+        # Default /analyze and /analyze/pronouns
         result = analyze_pronouns(text)
         result["analyzer"] = "pronoun-shift"
+        # Also include coherence analysis if requested or on general /analyze
+        coherence = analyze_coherence(text)
+        result["coherence"] = coherence
         self._send(200, result)
 
     def log_message(self, *args):  # silence default logging noise
@@ -170,9 +184,13 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    port = int(__import__("os").environ.get("PORT", "5000"))
+    import sys
+    import os
+    # Ensure local directory is on python path for importing coherence_analyzer
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    port = int(os.environ.get("PORT", "5000"))
     httpd = ThreadingHTTPServer(("0.0.0.0", port), Handler)
-    print(f"[nlp] Pronoun Shift Analyzer on :{port} (tokenizer={_TOKENIZER})")
+    print(f"[nlp] Linguistic Analysis Microservice on :{port} (Pronoun Shift & Coherence Parser, tokenizer={_TOKENIZER})")
     httpd.serve_forever()
 
 

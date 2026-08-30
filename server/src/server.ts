@@ -1,15 +1,15 @@
 import http from "node:http";
 import { Server } from "socket.io";
 import { analyzePronouns, type PronounAnalysis } from "./pronounAnalyzer.js";
+import { analyzeCoherence, type CoherenceAnalysis } from "./coherenceAnalyzer.js";
 /**
- * NarrativeRebuild — real-time layer stub.
+ * NarrativeRebuild — real-time layer & linguistic analysis service.
  *
- * Consumes the pause / pulse lifecycle events emitted by the "Continuous
- * Motion" typing validator on the client and aggregates them into lightweight
- * flow metrics so longitudinal reports can reason about how fractured or fluid
- * a session's writing was. Exposes the Pronoun Shift Tracker endpoint used by
- * the client-side linguistic analyzer. This is a minimal, dependency-light stub
- * suitable for local verification; production would persist to MongoDB.
+ * - Consumes the pause / pulse lifecycle events emitted by the "Continuous
+ *   Motion" typing validator (Module 1, Member 2).
+ * - Exposes the Pronoun Shift Tracker endpoint (Module 3, Member 2).
+ * - Exposes the Coherence Metric Parser endpoint and real-time socket tracking
+ *   for cause-and-effect and cognitive insight analysis (Module 3, Member 1).
  */
 
 const PORT = Number(process.env.PORT ?? 4000);
@@ -30,7 +30,7 @@ function readBody(req: http.IncomingMessage): Promise<string> {
   });
 }
 
-/** Ask the Python NLP microservice to analyze the text. */
+/** Ask the Python NLP microservice to analyze pronouns in text. */
 async function analyzeViaNlp(text: string): Promise<PronounAnalysis | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 2500);
@@ -50,6 +50,43 @@ async function analyzeViaNlp(text: string): Promise<PronounAnalysis | null> {
       firstPercent: json.firstPercent as number,
       thirdPercent: json.thirdPercent as number,
       subjectiveRatio: (json.subjectiveRatio as number | null) ?? null,
+      tokenizer: (json.tokenizer as string) ?? "python",
+      source: "nlp",
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Ask the Python NLP microservice to analyze coherence (cause/effect & insight) in text. */
+async function analyzeCoherenceViaNlp(text: string): Promise<CoherenceAnalysis | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2500);
+  try {
+    const resp = await fetch(`http://127.0.0.1:${NLP_PORT}/analyze/coherence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal: controller.signal,
+    });
+    if (!resp.ok) return null;
+    const json = (await resp.json()) as Record<string, unknown>;
+    if (typeof json.coherenceRatio !== "number") return null;
+    return {
+      totalWords: (json.totalWords as number) ?? 0,
+      causalCount: (json.causalCount as number) ?? 0,
+      causalDensity: (json.causalDensity as number) ?? 0,
+      insightCount: (json.insightCount as number) ?? 0,
+      insightDensity: (json.insightDensity as number) ?? 0,
+      totalCoherenceCount: (json.totalCoherenceCount as number) ?? 0,
+      coherenceRatio: (json.coherenceRatio as number) ?? 0,
+      causalToInsightRatio: (json.causalToInsightRatio as number | null) ?? null,
+      depthLevel: (json.depthLevel as string) ?? "Raw / Descriptive Stance",
+      depthScore: (json.depthScore as number) ?? 0,
+      detectedCausalWords: (json.detectedCausalWords as Array<{ word: string; count: number }>) ?? [],
+      detectedInsightWords: (json.detectedInsightWords as Array<{ word: string; count: number }>) ?? [],
       tokenizer: (json.tokenizer as string) ?? "python",
       source: "nlp",
     };
@@ -94,6 +131,26 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (req.method === "POST" && url.pathname === "/api/linguistics/coherence") {
+    try {
+      const raw = await readBody(req);
+      const payload = JSON.parse(raw) as { text?: string };
+      const text = typeof payload.text === "string" ? payload.text : "";
+
+      // Prefer Python NLP service, fallback to pure JS/TS coherence analyzer
+      const viaNlp = await analyzeCoherenceViaNlp(text);
+      const analysis: CoherenceAnalysis = viaNlp ?? analyzeCoherence(text);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ analyzer: "coherence-parser", ...analysis }));
+      return;
+    } catch {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "invalid JSON body" }));
+      return;
+    }
+  }
+
   if (req.method === "GET" && url.pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ service: "narrativerebuild-realtime", ok: true }));
@@ -118,6 +175,8 @@ interface SessionFlow {
   startedAt: number;
   /** Latest pronoun-shift analysis recorded for the session. */
   pronouns: PronounAnalysis | null;
+  /** Latest coherence analysis recorded for the session. */
+  coherence: CoherenceAnalysis | null;
 }
 
 const flows = new Map<string, SessionFlow>();
@@ -135,6 +194,7 @@ function ensureFlow(sessionId: string): SessionFlow {
       lastEventAt: now,
       startedAt: now,
       pronouns: null,
+      coherence: null,
     };
     flows.set(sessionId, f);
   }
@@ -180,6 +240,23 @@ io.on("connection", (socket) => {
       const viaNlp = await analyzeViaNlp(payload.text ?? "");
       const analysis: PronounAnalysis = viaNlp ?? analyzePronouns(payload.text ?? "");
       flow.pronouns = analysis;
+      flow.lastEventAt = Date.now();
+      if (ack) ack(analysis);
+    }
+  );
+
+  // Coherence Metric — record the current cause-and-effect & cognitive insight
+  // density for the session to measure cognitive processing depth over time.
+  socket.on(
+    "typing:coherence",
+    async (
+      payload: { sessionId: string; text: string },
+      ack?: (a: CoherenceAnalysis) => void
+    ) => {
+      const flow = ensureFlow(payload.sessionId);
+      const viaNlp = await analyzeCoherenceViaNlp(payload.text ?? "");
+      const analysis: CoherenceAnalysis = viaNlp ?? analyzeCoherence(payload.text ?? "");
+      flow.coherence = analysis;
       flow.lastEventAt = Date.now();
       if (ack) ack(analysis);
     }
