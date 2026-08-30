@@ -1,19 +1,105 @@
 import http from "node:http";
 import { Server } from "socket.io";
-
+import { analyzePronouns, type PronounAnalysis } from "./pronounAnalyzer.js";
 /**
  * NarrativeRebuild — real-time layer stub.
  *
  * Consumes the pause / pulse lifecycle events emitted by the "Continuous
  * Motion" typing validator on the client and aggregates them into lightweight
  * flow metrics so longitudinal reports can reason about how fractured or fluid
- * a session's writing was. This is a minimal, dependency-light stub suitable
- * for local verification; production would persist to MongoDB.
+ * a session's writing was. Exposes the Pronoun Shift Tracker endpoint used by
+ * the client-side linguistic analyzer. This is a minimal, dependency-light stub
+ * suitable for local verification; production would persist to MongoDB.
  */
 
 const PORT = Number(process.env.PORT ?? 4000);
+const NLP_PORT = Number(process.env.NLP_PORT ?? 5000);
 
-const server = http.createServer((_req, res) => {
+function readBody(req: http.IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (c) => {
+      data += c;
+      if (data.length > 1_000_000) {
+        reject(new Error("body too large"));
+        req.destroy();
+      }
+    });
+    req.on("end", () => resolve(data));
+    req.on("error", reject);
+  });
+}
+
+/** Ask the Python NLP microservice to analyze the text. */
+async function analyzeViaNlp(text: string): Promise<PronounAnalysis | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2500);
+  try {
+    const resp = await fetch(`http://127.0.0.1:${NLP_PORT}/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal: controller.signal,
+    });
+    if (!resp.ok) return null;
+    const json = (await resp.json()) as Record<string, unknown>;
+    if (typeof json.firstCount !== "number") return null;
+    return {
+      firstCount: json.firstCount as number,
+      thirdCount: json.thirdCount as number,
+      firstPercent: json.firstPercent as number,
+      thirdPercent: json.thirdPercent as number,
+      subjectiveRatio: (json.subjectiveRatio as number | null) ?? null,
+      tokenizer: (json.tokenizer as string) ?? "python",
+      source: "nlp",
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const server = http.createServer(async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+
+  if (req.method === "POST" && url.pathname === "/api/linguistics/pronouns") {
+    try {
+      const raw = await readBody(req);
+      const payload = JSON.parse(raw) as { text?: string };
+      const text = typeof payload.text === "string" ? payload.text : "";
+
+      // Prefer the dedicated Python NLP service; fall back to the bundled JS
+      // analyzer so the tracker is resilient when the microservice is offline.
+      const viaNlp = await analyzeViaNlp(text);
+      const analysis: PronounAnalysis = viaNlp ?? analyzePronouns(text);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ analyzer: "pronoun-shift", ...analysis }));
+      return;
+    } catch {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "invalid JSON body" }));
+      return;
+    }
+  }
+
+  if (req.method === "GET" && url.pathname === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ service: "narrativerebuild-realtime", ok: true }));
+    return;
+  }
+
   res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ service: "narrativerebuild-realtime", ok: true }));
 });
@@ -30,6 +116,8 @@ interface SessionFlow {
   maxIdleMs: number;
   lastEventAt: number;
   startedAt: number;
+  /** Latest pronoun-shift analysis recorded for the session. */
+  pronouns: PronounAnalysis | null;
 }
 
 const flows = new Map<string, SessionFlow>();
@@ -46,6 +134,7 @@ function ensureFlow(sessionId: string): SessionFlow {
       maxIdleMs: 0,
       lastEventAt: now,
       startedAt: now,
+      pronouns: null,
     };
     flows.set(sessionId, f);
   }
@@ -78,6 +167,23 @@ io.on("connection", (socket) => {
       });
     }
   });
+
+  // Pronoun Shift — record the current first/third-person split for the
+  // session so longitudinal reports can trend ownership vs. distancing.
+  socket.on(
+    "typing:pronouns",
+    async (
+      payload: { sessionId: string; text: string },
+      ack?: (a: PronounAnalysis) => void
+    ) => {
+      const flow = ensureFlow(payload.sessionId);
+      const viaNlp = await analyzeViaNlp(payload.text ?? "");
+      const analysis: PronounAnalysis = viaNlp ?? analyzePronouns(payload.text ?? "");
+      flow.pronouns = analysis;
+      flow.lastEventAt = Date.now();
+      if (ack) ack(analysis);
+    }
+  );
 });
 
 server.listen(PORT, () => {

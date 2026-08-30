@@ -1,0 +1,4 @@
+# NarrativeRebuild — Pronoun Shift Analyzer service
+# The service works with only the Python standard library; NLTK is optional
+# and only used for improved tokenization.
+nltk>=3.8
