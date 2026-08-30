@@ -69,10 +69,16 @@ respective folder):
 
 ## What's inside
 
-- **Continuous Motion typing validator** — real-time keystroke monitor. If the user stops
-  typing for more than 5 seconds, the text area gently pulses as a soft, non-blocking nudge
-  to keep the free flow of expressive writing going.
-- **Pronoun Shift Tracker** — computes the percentage of first-person pronouns ("I", "me")
-  vs third-person pronouns ("he", "she", "they") per entry to visualize emotional ownership
-  vs distancing across sessions. Analyzed by the Python NLP service, with a bundled JS
-  fallback so the feature works even when the microservice is offline.
+### Module 1: Writing Session & Safety Mechanics
+- **Pennebaker Protocol Structured Interface (Member 1)** — A distraction-free, locked writing workspace enforcing the classic 20-minute continuous writing session with real-time countdown, disabled navigation, formatting, and distraction masking.
+- **Continuous Motion typing validator (Member 2)** — Real-time keystroke monitor. If the user stops typing for more than 5 seconds, the text area gently pulses as a soft, non-blocking nudge to keep the free flow of expressive writing going.
+
+### Module 2: Guided Protocol & Structured Reflection
+- **Narrative Sequencing Template Wizard (Member 1)** — Guided 4-day writing framework for processing trauma across distinct angles (Day 1: Raw Emotion, Day 2: Facts and Actions, Day 3: Consequences, Day 4: Meaning and Growth) with sequential stage unlocking and longitudinal state tracking.
+
+### Module 3: Linguistic Analysis Engine
+- **Coherence Metric Parser (Member 1)** — Text-analysis engine scanning entries for cause-and-effect language (`because`, `therefore`, `since`, `led to`) and cognitive insight markers (`realize`, `understand`, `learned`), computing cognitive processing depth ratios across 4-day sessions.
+- **Pronoun Shift Tracker (Member 2)** — Computes the percentage of first-person pronouns ("I", "me") vs third-person pronouns ("he", "she", "they") per entry to visualize emotional ownership vs distancing across sessions.
+
+### Module 4: Progress Tracking, Ambience & Archive
+- **Acoustic/Ambient Atmosphere Selector (Member 1)** — Built-in multi-track Web Audio synthesizer offering lyric-free soundscapes (Binaural Beats for Theta/Alpha waves, Pink Noise, White Noise, Grounding Drone) to lower physiological arousal during writing.
