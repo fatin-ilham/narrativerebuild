@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ContinuousMotion } from "./components/ContinuousMotion";
+import { PronounShiftTracker } from "./components/PronounShiftTracker";
 
 export default function App() {
   const [text, setText] = useState("");
@@ -50,6 +51,10 @@ export default function App() {
         <p className="mt-4 text-right text-xs text-stone-500">
           {text.length} characters ·{String(text.trim()).split(/\s+/).filter(Boolean).length} words
         </p>
+
+        <div className="mt-6">
+          <PronounShiftTracker text={text} />
+        </div>
       </main>
     </div>
   );
