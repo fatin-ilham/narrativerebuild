@@ -16,5 +16,8 @@
     "socket.io-client": "^4.7.5",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

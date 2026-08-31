@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { ContinuousMotion } from "./ContinuousMotion";
 import { AmbientAtmosphereSelector } from "./AmbientAtmosphereSelector";
 import type { NarrativeDayStage } from "../lib/narrativeProtocol";
+import { SafeWordModal } from "./SafeWordModal";
+import { SomatizationForm } from "./SomatizationForm";
 
 export interface PennebakerStructuredInterfaceProps {
   sessionId?: string;
@@ -31,6 +33,8 @@ export function PennebakerStructuredInterface({
 
   const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+  const [isSafeWordOpen, setIsSafeWordOpen] = useState<boolean>(false);
+  const [sensations, setSensations] = useState<string[]>([]);
 
   // Prevent accidental navigation during active session
   useEffect(() => {
@@ -167,6 +171,22 @@ export function PennebakerStructuredInterface({
               {formatTime(secondsRemaining)}
             </span>
           </div>
+
+          {/* Emergency Safe-Word Halt Button */}
+          {isActive && (
+            <button
+              onClick={() => {
+                setText(""); // Instant zero-retention text purge
+                setIsActive(false);
+                setIsSafeWordOpen(true);
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-rose-800/80 bg-rose-950/50 px-3 py-1.5 text-xs font-bold text-rose-300 hover:bg-rose-900/70 transition shadow-sm"
+              title="Emergency halt session and wipe memory"
+            >
+              <span>🚨</span>
+              <span>Safe-Word</span>
+            </button>
+          )}
 
           <button
             onClick={handleExitRequest}
@@ -334,6 +354,13 @@ export function PennebakerStructuredInterface({
               </div>
             </div>
 
+            {/* Somatization Reflection Checklist */}
+            <SomatizationForm
+              selectedSensations={sensations}
+              onChange={setSensations}
+              className="mt-6 max-w-md mx-auto"
+            />
+
             <div className="mt-8 flex justify-center gap-4">
               <button
                 onClick={handleSaveAndComplete}
@@ -376,6 +403,15 @@ export function PennebakerStructuredInterface({
           </div>
         </div>
       )}
+
+      {/* Safe-Word Emergency Halt Modal */}
+      <SafeWordModal
+        isOpen={isSafeWordOpen}
+        onClose={() => {
+          setIsSafeWordOpen(false);
+          onExitSession();
+        }}
+      />
     </div>
   );
 }
