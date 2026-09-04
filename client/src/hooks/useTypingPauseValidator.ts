@@ -69,31 +69,32 @@ export function useTypingPauseValidator(
   const [idleMs, setIdleMs] = useState<number>(0);
   const [, setTick] = useState<number>(0);
 
-  const optionsRef = useRef({ onIdle, onReport });
-  optionsRef.current = { onIdle, onReport };
+  const optionsRef = useRef({ onIdle, onReport, now, suppressWhen });
+  optionsRef.current = { onIdle, onReport, now, suppressWhen };
 
   const notifyActivity = useCallback(() => {
-    lastActivityRef.current = now();
+    lastActivityRef.current = optionsRef.current.now();
     if (stateRef.current !== "typing") {
       stateRef.current = "typing";
       setState("typing");
     }
     idleFiredRef.current = false;
-    suppressedRef.current = suppressWhen();
-  }, [now, suppressWhen]);
+    suppressedRef.current = optionsRef.current.suppressWhen();
+    setIdleMs(0);
+  }, []);
 
   const reset = useCallback(() => {
-    lastActivityRef.current = now();
+    lastActivityRef.current = optionsRef.current.now();
     idleFiredRef.current = false;
     nudgeCountRef.current = 0;
     stateRef.current = "typing";
     setState("typing");
     setIdleMs(0);
-  }, [now]);
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      const elapsed = now() - lastActivityRef.current;
+      const elapsed = optionsRef.current.now() - lastActivityRef.current;
 
       if (suppressedRef.current) {
         if (stateRef.current !== "typing") {
@@ -135,7 +136,7 @@ export function useTypingPauseValidator(
     }, 250);
 
     return () => window.clearInterval(timer);
-  }, [thresholdMs, now]);
+  }, [thresholdMs]);
 
   // When suppression is engaged from the start, keep the clock running so the
   // moment suppression is released the correct residual idle time is used.
