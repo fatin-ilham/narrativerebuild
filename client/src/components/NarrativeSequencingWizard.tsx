@@ -5,6 +5,7 @@ import {
   type NarrativeSequenceState,
   isDayUnlocked,
 } from "../lib/narrativeProtocol";
+import { TimeDelayedReengagement } from "./TimeDelayedReengagement";
 
 export interface NarrativeSequencingWizardProps {
   sequenceState: NarrativeSequenceState;
@@ -259,9 +260,20 @@ export function NarrativeSequencingWizard({
                 {new Date(completedRecord.completedAt).toLocaleDateString()} · {completedRecord.wordCount} words
               </span>
             </div>
-            <p className="mt-2 max-h-24 overflow-y-auto rounded-lg border border-stone-800/80 bg-stone-950/80 p-3 font-mono text-xs text-stone-400">
-              {completedRecord.text}
-            </p>
+            {/* 7-day re-engagement lock gates re-reading of the raw entry. */}
+            <div className="mt-3">
+              <TimeDelayedReengagement
+                showRegistry={false}
+                entries={[
+                  {
+                    entryId: `day-${selectedStage.day}`,
+                    title: `Day ${selectedStage.day} Raw Entry`,
+                    text: completedRecord.text,
+                    createdAt: completedRecord.completedAt,
+                  },
+                ]}
+              />
+            </div>
           </div>
         )}
       </div>
