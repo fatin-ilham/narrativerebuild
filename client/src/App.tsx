@@ -5,6 +5,8 @@ import { PennebakerStructuredInterface } from "./components/PennebakerStructured
 import { NarrativeSequencingWizard } from "./components/NarrativeSequencingWizard";
 import { CoherenceMetricParser } from "./components/CoherenceMetricParser";
 import { AmbientAtmosphereSelector } from "./components/AmbientAtmosphereSelector";
+import { PrePostAffectTracker } from "./components/PrePostAffectTracker";
+import { schedulePost } from "./lib/affect";
 import {
   loadNarrativeState,
   recordCompletedDay,
@@ -29,6 +31,10 @@ export default function App() {
   // Locked Pennebaker Session State (Module 1, Member 1)
   const [isLockedSessionOpen, setIsLockedSessionOpen] = useState<boolean>(false);
 
+  // Pre/Post Affect Gate (Module 4, Member 2)
+  const [showAffectGate, setShowAffectGate] = useState<boolean>(false);
+  const [affectSessionId, setAffectSessionId] = useState<string>("");
+
   // Handle starting a writing session from the 4-day wizard
   const handleStartWritingFromWizard = (
     stage: NarrativeDayStage,
@@ -38,6 +44,15 @@ export default function App() {
     if (promptText) {
       setText((prev) => (prev ? `${prev}\n\n${promptText} ` : `${promptText} `));
     }
+    // Open the pre-session affect gate before the locked modal.
+    setAffectSessionId("sess-" + Date.now());
+    setIsLockedSessionOpen(false);
+    setShowAffectGate(true);
+  };
+
+  // Begin the actual locked writing session once pre-affect scales are complete.
+  const handleAffectPreComplete = () => {
+    setShowAffectGate(false);
     setIsLockedSessionOpen(true);
   };
 
@@ -57,6 +72,8 @@ export default function App() {
     });
     setSequenceState(updated);
     setIsLockedSessionOpen(false);
+    // Schedule the +15 minute post-session affect scales.
+    if (affectSessionId) schedulePost(affectSessionId);
     setActiveTab("linguistics");
   };
 
@@ -189,7 +206,11 @@ export default function App() {
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setIsLockedSessionOpen(true)}
+                  onClick={() => {
+                    setAffectSessionId("sess-" + Date.now());
+                    setIsLockedSessionOpen(false);
+                    setShowAffectGate(true);
+                  }}
                   className="flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-stone-950 shadow-md shadow-emerald-500/20 hover:bg-emerald-400 transition"
                 >
                   <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
@@ -243,6 +264,13 @@ export default function App() {
               />
               <PronounShiftTracker text={text} />
             </div>
+
+            {/* Pre/Post Affect Tracker (Module 4, Member 2) */}
+            <PrePostAffectTracker
+              sessionId={affectSessionId || "studio-affect-session"}
+              day={activeStage?.day}
+              sessionInProgress={isLockedSessionOpen}
+            />
           </div>
         )}
 
@@ -266,6 +294,13 @@ export default function App() {
 
             {/* Pronoun Shift Tracker (Module 3, Member 2) */}
             <PronounShiftTracker text={text} />
+
+            {/* Pre/Post Affect Tracker (Module 4, Member 2) */}
+            <PrePostAffectTracker
+              sessionId={affectSessionId || "studio-affect-session"}
+              day={activeStage?.day}
+              sessionInProgress={isLockedSessionOpen}
+            />
           </div>
         )}
 
@@ -285,6 +320,40 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* PRE-SESSION AFFECT GATE (Module 4, Member 2) */}
+      {showAffectGate && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-stone-950 text-stone-100 overflow-y-auto">
+          <header className="flex items-center justify-between border-b border-stone-800/80 bg-stone-950/90 px-8 py-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
+                Before You Begin
+              </span>
+              <span className="rounded bg-rose-500/20 px-2 py-0.5 text-[0.65rem] font-semibold uppercase text-rose-400 border border-rose-500/30">
+                Pre-Session Affect
+              </span>
+            </div>
+            <button
+              onClick={() => setShowAffectGate(false)}
+              className="rounded-lg border border-stone-800 p-2 text-stone-500 hover:bg-stone-900 hover:text-stone-300"
+              title="Cancel"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </header>
+
+          <main className="mx-auto w-full max-w-4xl flex-1 px-8 py-8">
+            <PrePostAffectTracker
+              sessionId={affectSessionId}
+              day={activeStage?.day}
+              showHistory={false}
+              onPreComplete={handleAffectPreComplete}
+            />
+          </main>
+        </div>
+      )}
 
       {/* LOCKED PENNEBAKER PROTOCOL INTERFACE (Module 1, Member 1) */}
       {isLockedSessionOpen && (
