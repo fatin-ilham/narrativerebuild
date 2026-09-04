@@ -6,7 +6,9 @@ import { NarrativeSequencingWizard } from "./components/NarrativeSequencingWizar
 import { CoherenceMetricParser } from "./components/CoherenceMetricParser";
 import { AmbientAtmosphereSelector } from "./components/AmbientAtmosphereSelector";
 import { PrePostAffectTracker } from "./components/PrePostAffectTracker";
+import { TimeDelayedReengagement } from "./components/TimeDelayedReengagement";
 import { schedulePost } from "./lib/affect";
+import { lockEntry } from "./lib/reengagement";
 import {
   loadNarrativeState,
   recordCompletedDay,
@@ -72,6 +74,12 @@ export default function App() {
     });
     setSequenceState(updated);
     setIsLockedSessionOpen(false);
+    // Apply the 7-day re-engagement lock to this raw entry (keyed by day,
+    // matching sequenceState.completedDays and the wizard's display surface).
+    lockEntry(`day-${day}`, {
+      title: `Day ${day} Raw Entry`,
+      createdAt: Date.now(),
+    });
     // Schedule the +15 minute post-session affect scales.
     if (affectSessionId) schedulePost(affectSessionId);
     setActiveTab("linguistics");
@@ -300,6 +308,18 @@ export default function App() {
               sessionId={affectSessionId || "studio-affect-session"}
               day={activeStage?.day}
               sessionInProgress={isLockedSessionOpen}
+            />
+
+            {/* Time-Delayed Re-engagement Engine (Module 5, Safety Engine) */}
+            <TimeDelayedReengagement
+              entries={Object.values(sequenceState.completedDays)
+                .filter((record) => Boolean(record.text))
+                .map((record) => ({
+                  entryId: `day-${record.day}`,
+                  title: `Day ${record.day} Raw Entry`,
+                  text: record.text,
+                  createdAt: record.completedAt,
+                }))}
             />
           </div>
         )}
