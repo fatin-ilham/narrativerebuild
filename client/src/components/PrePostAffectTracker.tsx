@@ -161,7 +161,7 @@ export function PrePostAffectTracker({
         <div>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-rose-400 border border-rose-500/30">
-              Module 4 · Subjective Affect
+              Module 2 · Subjective Affect
             </span>
             <span className="text-xs text-stone-500">Pre / Post Writing Scales</span>
           </div>

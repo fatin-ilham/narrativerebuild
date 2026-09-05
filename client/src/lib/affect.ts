@@ -1,5 +1,5 @@
 /**
- * NarrativeRebuild — Pre/Post Writing Subjective Affect (Module 4, Member 2).
+ * NarrativeRebuild — Pre/Post Writing Subjective Affect (Module 2, Member 2).
  *
  * A short set of mood and stress (affect) scales completed immediately before
  * and 15 minutes after a writing session. Both scores are stored against the
