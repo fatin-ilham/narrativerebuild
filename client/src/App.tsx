@@ -33,11 +33,11 @@ export default function App() {
   // Locked Pennebaker Session State (Module 1, Member 1)
   const [isLockedSessionOpen, setIsLockedSessionOpen] = useState<boolean>(false);
 
-  // Pre/Post Affect Gate (Module 4, Member 2)
+  // Pre/Post Affect Gate (Module 2, Member 2)
   const [showAffectGate, setShowAffectGate] = useState<boolean>(false);
   const [affectSessionId, setAffectSessionId] = useState<string>("");
 
-  // ===== MODULE 1, FEATURE 3: DRAFT DESTRUCTION SIMULATOR =====
+  // ===== MODULE 1, MEMBER 3: DRAFT DESTRUCTION SIMULATOR =====
   const [showBurnConfirm, setShowBurnConfirm] = useState<boolean>(false);
 
   const handleBurn = () => {
@@ -51,7 +51,7 @@ export default function App() {
     setShowBurnConfirm(false);
   };
 
-  // ===== MODULE 2, FEATURE 3: NARRATIVE COMPLETION CHECKLIST =====
+  // ===== MODULE 2, MEMBER 3: NARRATIVE COMPLETION CHECKLIST =====
   const [feedback, setFeedback] = useState<string[]>([]);
 
   const checkNarrative = () => {
@@ -93,7 +93,7 @@ export default function App() {
     setFeedback(result);
   };
 
-  // ===== MODULE 3, FEATURE 3: INSIGHT WORD DENSITY METRIC =====
+  // ===== MODULE 3, MEMBER 3: INSIGHT WORD DENSITY METRIC =====
   const [insightScore, setInsightScore] = useState<number | null>(null);
 
   const calculateInsightDensity = () => {
@@ -112,7 +112,7 @@ export default function App() {
     setInsightScore(count);
   };
 
-  // ===== MODULE 4, FEATURE 3: ANONYMIZED WISDOM ARCHIVE CONTRIBUTION =====
+  // ===== MODULE 4, MEMBER 3: ANONYMIZED WISDOM ARCHIVE CONTRIBUTION =====
   const [contributeToArchive, setContributeToArchive] = useState(false);
   const [archiveMessage, setArchiveMessage] = useState("");
 
@@ -375,7 +375,7 @@ export default function App() {
               <PronounShiftTracker text={text} />
             </div>
 
-            {/* Pre/Post Affect Tracker (Module 4, Member 2) */}
+            {/* Pre/Post Affect Tracker (Module 2, Member 2) */}
             <PrePostAffectTracker
               sessionId={affectSessionId || "studio-affect-session"}
               day={activeStage?.day}
@@ -405,14 +405,14 @@ export default function App() {
             {/* Pronoun Shift Tracker (Module 3, Member 2) */}
             <PronounShiftTracker text={text} />
 
-            {/* Pre/Post Affect Tracker (Module 4, Member 2) */}
+            {/* Pre/Post Affect Tracker (Module 2, Member 2) */}
             <PrePostAffectTracker
               sessionId={affectSessionId || "studio-affect-session"}
               day={activeStage?.day}
               sessionInProgress={isLockedSessionOpen}
             />
 
-            {/* Time-Delayed Re-engagement Engine (Module 5, Safety Engine) */}
+            {/* Time-Delayed Re-engagement Engine (Module 4, Member 2) */}
             <TimeDelayedReengagement
               entries={Object.values(sequenceState.completedDays)
                 .filter((record) => Boolean(record.text))
@@ -470,7 +470,7 @@ export default function App() {
               className="w-full h-48 bg-stone-800/50 text-stone-100 rounded-lg p-4 border border-stone-700 focus:border-emerald-400 focus:outline-none resize-none"
             />
 
-            {/* MODULE 1, FEATURE 3: DRAFT DESTRUCTION SIMULATOR */}
+            {/* MODULE 1, MEMBER 3: DRAFT DESTRUCTION SIMULATOR */}
             <section className="mt-8 border-t border-stone-800/80 pt-8">
               <h2 className="text-lg font-medium">🔥 Draft Destruction Simulator</h2>
               <p className="text-sm text-stone-400 mb-4">
@@ -485,7 +485,7 @@ export default function App() {
               </button>
             </section>
 
-            {/* MODULE 2, FEATURE 3: NARRATIVE COMPLETION CHECKLIST */}
+            {/* MODULE 2, MEMBER 3: NARRATIVE COMPLETION CHECKLIST */}
             <section className="mt-8 border-t border-stone-800/80 pt-8">
               <h2 className="text-lg font-medium">✅ Narrative Completion Checklist</h2>
               <p className="text-sm text-stone-400 mb-4">
@@ -510,7 +510,7 @@ export default function App() {
               )}
             </section>
 
-            {/* MODULE 3, FEATURE 3: INSIGHT WORD DENSITY METRIC */}
+            {/* MODULE 3, MEMBER 3: INSIGHT WORD DENSITY METRIC */}
             <section className="mt-8 border-t border-stone-800/80 pt-8">
               <h2 className="text-lg font-medium">📊 Insight Word Density</h2>
               <p className="text-sm text-stone-400 mb-4">
@@ -537,7 +537,7 @@ export default function App() {
               )}
             </section>
 
-            {/* MODULE 4, FEATURE 3: ANONYMIZED WISDOM ARCHIVE CONTRIBUTION */}
+            {/* MODULE 4, MEMBER 3: ANONYMIZED WISDOM ARCHIVE CONTRIBUTION */}
             <section className="mt-8 border-t border-stone-800/80 pt-8">
               <h2 className="text-lg font-medium">📚 Wisdom Archive Contribution</h2>
               <p className="text-sm text-stone-400 mb-4">
@@ -571,7 +571,7 @@ export default function App() {
         )}
       </main>
 
-      {/* PRE-SESSION AFFECT GATE (Module 4, Member 2) */}
+      {/* PRE-SESSION AFFECT GATE (Module 2, Member 2) */}
       {showAffectGate && (
         <div className="fixed inset-0 z-50 flex flex-col bg-stone-950 text-stone-100 overflow-y-auto">
           <header className="flex items-center justify-between border-b border-stone-800/80 bg-stone-950/90 px-8 py-4">

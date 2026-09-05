@@ -181,7 +181,7 @@ export function TimeDelayedReengagement({
         <div>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-amber-400 border border-amber-500/30">
-              Module 5 · Safety Engine
+              Module 4 · Safety Engine
             </span>
             <span className="text-xs text-stone-500">7-Day Cool-Down Rule</span>
           </div>

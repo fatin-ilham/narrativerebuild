@@ -1,5 +1,5 @@
 /**
- * NarrativeRebuild — Time-Delayed Re-engagement Engine (Module 5, Member 2).
+ * NarrativeRebuild — Time-Delayed Re-engagement Engine (Module 4, Member 2).
  *
  * A scheduling rule that locks a specific raw entry for exactly 7 days after it
  * is created. This prevents the user from obsessively re-reading or ruminating
